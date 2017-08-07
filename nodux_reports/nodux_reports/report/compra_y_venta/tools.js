@@ -1,65 +1,22 @@
-// Copyright (c) 2016, NODUX and contributors
-// For license information, please see license.txt
-
-frappe.query_reports["Compra y Venta"] = {
-	// alert(this);
-	"filters": [
-		{
-			"fieldname": "fiscal_year",
-			"label": __("Fiscal Year"),
-			"fieldtype": "Link",
-			"options": "Fiscal Year",
-			"default": frappe.defaults.get_user_default("fiscal_year"),
-			"reqd": 1,
-
-		},
-
-		{
-			"fieldname":"date",
-			"label": __("Hasta"),
-			"fieldtype": "Date",
-			"width": "80"
-		}
-
-	],
-	onload: function(report) {
-		report.page.add_inner_button(__("Descargar XML"), function() {
-			var filters = report.get_values();
-			return frappe.call({
-				"method": "nodux_reports.nodux_reports.report.compra_y_venta.compra_y_venta.xml",
-				callback: function(r) {
-					// alert("entra")
-					if(r.message){
-						Nombre = report.get_values();
-						file_ats=(r.message);
-						// datos=(r.message[1]);
-						nombre=("anexo_transaccional-")+Nombre.fiscal_year
-
-						// file_ats = etree.tostring(ats, xml_declaration=True, encoding="utf-8")
-						nodux_reports.tools.downloadxml((file_ats),["Report Manager", "System Manager"], nombre);
-						return false;
-					}
-				}
-			})
-		});
-	}
-}
-
+// Copyright (c) 2015, Frappe Technologies Pvt. Ltd. and Contributors
+// MIT License. See license.txt
 
 frappe.provide("nodux_reports.tools");
 
 nodux_reports.tools.downloadxml = function(data, roles, title) {
+	alert("entra");
 	if(roles && roles.length && !has_common(roles, user_roles)) {
 		msgprint(__("Export not allowed. You need {0} role to export.", [frappe.utils.comma_or(roles)]));
 		return;
 	}
 
-	var filename = title + ".xml";
+	var filename = title + ".csv";
+	var csv_data = frappe.tools.to_csv(data);
 	var a = document.createElement('a');
 
 	if ("download" in a) {
 		// Used Blob object, because it can handle large files
-		var blob_object = new Blob([data], { type: 'text/xml;charset=UTF-8' });
+		var blob_object = new Blob([csv_data], { type: 'text/csv;charset=UTF-8' });
 		a.href = URL.createObjectURL(blob_object);
 		a.download = filename;
 
@@ -104,6 +61,18 @@ frappe.markdown = function(txt) {
 
 	return frappe.md2html.makeHtml(txt);
 }
+
+
+frappe.tools.to_csv = function(data) {
+	var res = [];
+	$.each(data, function(i, row) {
+		row = $.map(row, function(col) {
+			return typeof(col)==="string" ? ('"' + col.replace(/"/g, '""') + '"') : col;
+		});
+		res.push(row.join(","));
+	});
+	return res.join("\n");
+};
 
 frappe.slickgrid_tools = {
 	get_filtered_items: function(dataView) {
