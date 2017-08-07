@@ -15,11 +15,14 @@ frappe.query_reports["Compra y Venta"] = {
 		},
 
 		{
-			"fieldname":"date",
-			"label": __("Hasta"),
-			"fieldtype": "Date",
-			"width": "80"
-		}
+      "fieldname": "month",
+      "label": __("Month"),
+      "fieldtype": "Select",
+      "options": "Jan\nFeb\nMar\nApr\nMay\nJun\nJul\nAug\nSep\nOct\nNov\nDec",
+      "default": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov",
+              "Dec"
+      ][frappe.datetime.str_to_obj(frappe.datetime.get_today()).getMonth()],
+    }
 
 	],
 	onload: function(report) {

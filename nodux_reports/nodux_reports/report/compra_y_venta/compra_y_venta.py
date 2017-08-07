@@ -3,21 +3,21 @@
 
 from __future__ import unicode_literals
 import frappe
+from frappe.utils import cstr, cint, getdate, get_first_day, get_last_day, date_diff, add_days
 from lxml import etree
 
 @frappe.whitelist()
 def execute(filters=None):
-	columns, data = [], []
-	# receive = "<button type ='button' onclick = %s >Receive</button>"
-	columns = ["Codigo","Nombre Cuenta"+"::180","Tipo","Debito","Credito"]
-	accont=suma_accounts(filters)
-	suma=suma_total(filters)
-	print suma
-	for lista in accont:
-		data += [{"Nombre Cuenta":lista["nombre"],"Debito":lista["debit"], "Credito":  lista["credit"]}]
-	# for lista1 in suma:
-	data += [{},{"Nombre Cuenta":"Total","Debito":suma, "Credito":  suma}]
-	return columns,data
+    columns, data = [], []
+    columns = ["Codigo","Nombre Cuenta"+"::180","Tipo","Debito","Credito"]
+    accont=suma_accounts(filters)
+    suma=suma_total(filters)
+    consulta = ext_comp(filters)
+    for lista in accont:
+        data += [{"Nombre Cuenta":lista["nombre"],"Debito":lista["debit"], "Credito":  lista["credit"]}]
+
+    data += [{},{"Nombre Cuenta":"Total","Debito":suma, "Credito":  suma}]
+    return columns,data
 
 
 @frappe.whitelist()
@@ -35,9 +35,25 @@ def xml():
 
 def get_conditions(filters):
 	conditions=""
-	if filters.get("from_date"): conditions += " and posting_date>=%(from_date)s"
-	if filters.get("to_date"): conditions += " and posting_date<=%(to_date)s"
+	# if filters.get("month"): conditions += " and posting_date>=%(from_date)s"
+	# if filters.get("to_date"): conditions += " and posting_date<=%(to_date)s"
 	return conditions
+
+def ext_comp(filters):
+    # desde=""
+    from_date = get_first_day(filters["month"])
+    to_date = get_last_day(filters["month"] )
+
+
+    desde = str(from_date)
+    hasta = str(to_date)
+    compras =  frappe.db.sql(""" SELECT name
+								 FROM `tabPurchase Invoice`
+								 where  posting_date >=(convert (%s,DATE))
+                                 """,desde,as_dict=1)
+    print desde
+    print compras
+    return compras
 
 def ext_account(filters):
 	# conditions=get_conditions(filters)
@@ -62,7 +78,7 @@ def suma_accounts(filters):
 			pass
 		else:
 			cuentas_totales.append(cuentas['account'])
-	print cuentas_totales
+	# print cuentas_totales
 	# print c
 	for i in cuentas_totales:
 		total_debit=0
